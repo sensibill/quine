@@ -47,6 +47,14 @@ object WebServerBindConfig {
 final case class WebserverAdvertiseConfig(
   address: Host,
   port: Port,
+  baseUrl: Option[String] = None
 ) {
-  def url(protocol: String): URL = new URL(protocol, address.asString, port.asInt, "")
+  def url(protocol: String): URL = {
+    // If a baseUrl is provided, use it directly
+    if (baseUrl.isDefined) {
+      new URL(baseUrl.get)
+    } else {
+      new URL(protocol, address.asString, port.asInt, "")
+    }
+  }
 }

@@ -11,7 +11,7 @@ import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.{Directives, Route}
 import org.apache.pekko.util.Timeout
 
-import com.thatdot.quine.app.config.{QuineConfig, WebServerBindConfig}
+import com.thatdot.quine.app.config.QuineConfig
 
 import org.webjars.WebJarAssetLocator
 
@@ -106,7 +106,7 @@ class QuineAppRoutes(
         )
         
         // Serve the modified content
-        import org.apache.pekko.http.scaladsl.model.{ContentType, ContentTypes}
+        import org.apache.pekko.http.scaladsl.model.ContentTypes
         complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, modifiedHtml))
         
       case None =>
