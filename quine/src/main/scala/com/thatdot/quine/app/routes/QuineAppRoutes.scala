@@ -11,6 +11,8 @@ import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.{Directives, Route}
 import org.apache.pekko.util.Timeout
 
+import com.thatdot.quine.app.config.{QuineConfig, WebServerBindConfig}
+
 import org.webjars.WebJarAssetLocator
 
 import com.thatdot.common.logging.Log.{LazySafeLogging, LogConfig, SafeLoggableInterpolator}
@@ -76,12 +78,49 @@ class QuineAppRoutes(
     graph.getNamespaces.contains(namespaceFromString(namespace))
 
   /** Serves up the static assets from resources and for JS/CSS dependencies */
+  // Get HTML with possibly modified base href based on configured baseUrl
+  private def getHtmlWithBaseHref(): Route = {
+    val baseUrlOpt = config match {
+      case qc: QuineConfig if qc.webserver.baseUrl.isDefined => 
+        qc.webserver.baseUrl
+      case _ => None
+    }
+    
+    // If baseUrl is defined, serve modified HTML, otherwise serve original
+    baseUrlOpt match {
+      case Some(baseUrl) =>
+        // Extract the path from the URL
+        val url = new URL(baseUrl)
+        val path = url.getPath
+        val baseHref = if (path.isEmpty || path.endsWith("/")) path else path + "/"
+        
+        // Get resource as string
+        val htmlResource = scala.io.Source.fromInputStream(
+          getClass.getResourceAsStream("/web/quine-ui.html")
+        ).mkString
+        
+        // Modify the base href
+        val modifiedHtml = htmlResource.replaceFirst(
+          """<base href=".*?"(.*?)>""", 
+          s"""<base href="$baseHref"$$1>"""
+        )
+        
+        // Serve the modified content
+        import org.apache.pekko.http.scaladsl.model.{ContentType, ContentTypes}
+        complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, modifiedHtml))
+        
+      case None =>
+        // Serve the original file without modifications
+        getFromResource("web/quine-ui.html")
+    }
+  }
+
   lazy val staticFilesRoute: Route = {
     Directives.pathEndOrSingleSlash {
-      getFromResource("web/quine-ui.html")
+      getHtmlWithBaseHref()
     } ~
     Directives.path("dashboard" | "docs" | "v2docs") {
-      getFromResource("web/quine-ui.html")
+      getHtmlWithBaseHref()
     } ~
     Directives.path("quine-ui-startup.js") {
       getFromResource("web/quine-ui-startup.js")
