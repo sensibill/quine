@@ -78,20 +78,17 @@ class QuineAppRoutes(
     graph.getNamespaces.contains(namespaceFromString(namespace))
 
   /** Serves up the static assets from resources and for JS/CSS dependencies */
-  // Get HTML with possibly modified base href based on configured baseUrl
+  // Get HTML with possibly modified base href based on configured path
   private def getHtmlWithBaseHref(): Route = {
-    val baseUrlOpt = config match {
-      case qc: QuineConfig if qc.webserver.baseUrl.isDefined => 
-        qc.webserver.baseUrl
+    val pathOpt = config match {
+      case qc: QuineConfig if qc.webserverAdvertise.exists(_.path.isDefined) => 
+        qc.webserverAdvertise.flatMap(_.path)
       case _ => None
     }
     
-    // If baseUrl is defined, serve modified HTML, otherwise serve original
-    baseUrlOpt match {
-      case Some(baseUrl) =>
-        // Extract the path from the URL
-        val url = new URL(baseUrl)
-        val path = url.getPath
+    // If path is defined, serve modified HTML, otherwise serve original
+    pathOpt match {
+      case Some(path) =>
         val baseHref = if (path.isEmpty || path.endsWith("/")) path else path + "/"
         
         // Get resource as string

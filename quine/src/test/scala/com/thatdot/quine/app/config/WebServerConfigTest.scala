@@ -8,69 +8,51 @@ import com.thatdot.quine.util.{Host, Port}
 
 class WebServerConfigTest extends AnyFunSuite with should.Matchers {
   
-  test("WebServerBindConfig should use baseUrl when provided") {
-    val configWithBaseUrl = WebServerBindConfig(
-      baseUrl = Some("https://quine.example.com/webapp")
-    )
-    
-    val url = configWithBaseUrl.guessResolvableUrl
-    url.toString shouldEqual "https://quine.example.com/webapp"
-  }
-  
-  test("WebServerBindConfig should construct URL from host/port when baseUrl is not provided") {
-    val configWithoutBaseUrl = WebServerBindConfig(
-      address = Host("127.0.0.1"),
-      port = Port(8080),
-      baseUrl = None
-    )
-    
-    val url = configWithoutBaseUrl.guessResolvableUrl
-    url.toString shouldEqual "http://127.0.0.1:8080"
-  }
-  
   test("WebServerBindConfig should use localhost for wildcard bindings") {
     val wildcardConfig = WebServerBindConfig(
       address = Host("0.0.0.0"),
-      port = Port(8080),
-      baseUrl = None
+      port = Port(8080)
     )
     
     val url = wildcardConfig.guessResolvableUrl
     url.toString should startWith("http://127.0.0.1:8080")
   }
   
-  test("baseUrl with subpath should be respected") {
-    val configWithSubpath = WebServerBindConfig(
-      baseUrl = Some("https://example.org/quine/webapp")
+  test("WebServerBindConfig should construct URL from host/port") {
+    val config = WebServerBindConfig(
+      address = Host("127.0.0.1"),
+      port = Port(8080)
     )
     
-    val url = configWithSubpath.guessResolvableUrl
-    url.toString shouldEqual "https://example.org/quine/webapp"
+    val url = config.guessResolvableUrl
+    url.toString shouldEqual "http://127.0.0.1:8080"
   }
   
-  test("WebserverAdvertiseConfig should use baseUrl when provided") {
-    val configWithBaseUrl = WebserverAdvertiseConfig(
+  
+  
+  test("WebserverAdvertiseConfig should use path when provided") {
+    val configWithPath = WebserverAdvertiseConfig(
       address = Host("example.com"),
       port = Port(8080),
-      baseUrl = Some("https://quine.example.com/webapp")
+      path = Some("/webapp")
     )
     
-    val url = configWithBaseUrl.url("http")
-    url.toString shouldEqual "https://quine.example.com/webapp"
+    val url = configWithPath.url("https")
+    url.toString shouldEqual "https://example.com:8080/webapp"
   }
   
-  test("WebserverAdvertiseConfig should construct URL from host/port when baseUrl is not provided") {
-    val configWithoutBaseUrl = WebserverAdvertiseConfig(
+  test("WebserverAdvertiseConfig should construct URL from host/port when path is not provided") {
+    val configWithoutPath = WebserverAdvertiseConfig(
       address = Host("example.com"),
       port = Port(8080),
-      baseUrl = None
+      path = None
     )
     
-    val url = configWithoutBaseUrl.url("https")
+    val url = configWithoutPath.url("https")
     url.toString shouldEqual "https://example.com:8080"
   }
   
-  test("WebserverAdvertiseConfig should respect the protocol parameter when baseUrl is not provided") {
+  test("WebserverAdvertiseConfig should respect the protocol parameter when path is not provided") {
     val config = WebserverAdvertiseConfig(
       address = Host("example.com"),
       port = Port(8080)

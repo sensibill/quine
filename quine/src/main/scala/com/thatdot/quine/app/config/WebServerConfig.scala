@@ -14,29 +14,23 @@ final case class WebServerBindConfig(
   address: Host = Host("0.0.0.0"),
   port: Port = Port(8080),
   enabled: Boolean = true,
-  useTls: Boolean = sys.env.contains(KeystorePathEnvVar) && sys.env.contains(KeystorePasswordEnvVar),
-  baseUrl: Option[String] = None
+  useTls: Boolean = sys.env.contains(KeystorePathEnvVar) && sys.env.contains(KeystorePasswordEnvVar)
 ) {
   def protocol: String = if (useTls) "https" else "http"
 
   def guessResolvableUrl: URL = {
-    // If a baseUrl is provided, use it directly
-    if (baseUrl.isDefined) {
-      new URL(baseUrl.get)
-    } else {
-      val bindHost: Uri.Host = Uri.Host(address.asString)
-      // If the host of the bindUri is set to wildcard (INADDR_ANY and IN6ADDR_ANY) - i.e. "0.0.0.0" or "::"
-      // present the URL as "localhost" to the user. This is necessary because while
-      // INADDR_ANY as a source address means "bind to all interfaces", it cannot necessarily be
-      // used as a destination address
-      val resolveableHost =
-        if (bindHost.inetAddresses.head.isAnyLocalAddress)
-          Uri.Host(InetAddress.getLoopbackAddress)
-        else
-          bindHost
+    val bindHost: Uri.Host = Uri.Host(address.asString)
+    // If the host of the bindUri is set to wildcard (INADDR_ANY and IN6ADDR_ANY) - i.e. "0.0.0.0" or "::"
+    // present the URL as "localhost" to the user. This is necessary because while
+    // INADDR_ANY as a source address means "bind to all interfaces", it cannot necessarily be
+    // used as a destination address
+    val resolveableHost =
+      if (bindHost.inetAddresses.head.isAnyLocalAddress)
+        Uri.Host(InetAddress.getLoopbackAddress)
+      else
+        bindHost
 
-      new URL(protocol, resolveableHost.address, port.asInt, "")
-    }
+    new URL(protocol, resolveableHost.address, port.asInt, "")
   }
 
 }
@@ -47,14 +41,9 @@ object WebServerBindConfig {
 final case class WebserverAdvertiseConfig(
   address: Host,
   port: Port,
-  baseUrl: Option[String] = None
+  path: Option[String] = None
 ) {
   def url(protocol: String): URL = {
-    // If a baseUrl is provided, use it directly
-    if (baseUrl.isDefined) {
-      new URL(baseUrl.get)
-    } else {
-      new URL(protocol, address.asString, port.asInt, "")
-    }
+    new URL(protocol, address.asString, port.asInt, path.getOrElse(""))
   }
 }
